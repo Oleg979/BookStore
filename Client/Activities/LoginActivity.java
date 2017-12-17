@@ -53,21 +53,28 @@ reg.setOnClickListener(this);
 public void onClick(View view) { 
 
 new Thread(new Runnable() { 
+  
 @Override 
 public void run() { 
+  
 final String log = login.getText().toString(); 
 final String pass = password.getText().toString(); 
-HttpClient httpclient = new DefaultHttpClient(); 
+  
+HttpClient httpclient = new DefaultHttpClient();
 HttpPost http = new HttpPost("http://gt99.xyz/Book/Main.php"); 
+  
 List nameValuePairs = new ArrayList(2); 
 nameValuePairs.add(new BasicNameValuePair("Function", "Auth"));
 nameValuePairs.add(new BasicNameValuePair("Login", log)); 
 nameValuePairs.add(new BasicNameValuePair("Password", pass)); 
+  
 try { 
 http.setEntity(new UrlEncodedFormEntity(nameValuePairs)); 
-} catch (UnsupportedEncodingException e) { 
+} 
+catch (UnsupportedEncodingException e) { 
 e.printStackTrace(); 
 } 
+
 //получаем ответ от сервера 
 try { 
 result = (String) httpclient.execute(http, new BasicResponseHandler()); 
