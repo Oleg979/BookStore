@@ -1,3 +1,5 @@
+// Активити списка всех книг
+
 package sstu_team.book;
 
 import android.content.Context;
@@ -130,10 +132,6 @@ public class BookListActivity extends AppCompatActivity {
         });
 
         if (findViewById(R.id.book_detail_container) != null) {
-            // The detail container view will be present only in the
-            // large-screen layouts (res/values-w900dp).
-            // If this view is present, then the
-            // activity should be in two-pane mode.
             mTwoPane = true;
         }
 
