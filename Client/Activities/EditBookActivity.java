@@ -1,3 +1,5 @@
+// Активити редактирования книги
+
 package sstu_team.book;
 
 import android.animation.Animator;
@@ -50,9 +52,7 @@ import java.util.List;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
-/**
- * A login screen that offers login via email/password.
- */
+
 public class EditBookActivity extends AppCompatActivity implements View.OnClickListener {
 
     AutoCompleteTextView name;
@@ -140,17 +140,12 @@ public class EditBookActivity extends AppCompatActivity implements View.OnClickL
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-
-
         menu.add("Выйти из аккаунта");
-
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-
-
 
          if(item.getTitle().equals("Выйти из аккаунта")) {
             new Thread(new Runnable() {
