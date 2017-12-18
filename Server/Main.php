@@ -1,13 +1,11 @@
 <?php
+
 /////////////////////////////////////////////////////////////////////////////////////
 require 'iniClass.php';
-
 require 'Functions/FunctionsMainHelp/Auth.php';
 require 'Functions/FunctionsMainHelp/AuthTest.php';
-
 require 'Functions/FunctionsAuth/Register.php';
 require 'Functions/FunctionsAuth/DeAuth.php';
-
 require 'Functions/FunctionsBook/Add/BookAdd.php';
 require 'Functions/FunctionsBook/Del/BookDelete.php';
 require 'Functions/FunctionsBook/Get/GetAllBooks.php';
