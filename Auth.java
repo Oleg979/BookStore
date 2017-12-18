@@ -1,3 +1,5 @@
+// Активити авторизации/регистрации
+
 package sstu_team.book;
 
 import android.app.Activity;
@@ -110,12 +112,7 @@ public class Auth extends Activity implements View.OnClickListener{
             password.setText("");
         }
 
-
-
-
     }
-
-
 }
 
 
