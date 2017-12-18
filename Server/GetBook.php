@@ -1,3 +1,5 @@
+// Функция получения книги по её id
+
 <?php
     function GetBook($BookId, $BooksINI){
         
@@ -9,6 +11,6 @@
             }
         }
         
-    return $result;    
+    return $result; 
    }
 ?>
