@@ -1,3 +1,5 @@
+// Активити добавления новой книги
+
 package sstu_team.book;
 
 import android.animation.Animator;
@@ -50,9 +52,7 @@ import java.util.List;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
-/**
- * A login screen that offers login via email/password.
- */
+
 public class AddBookActivity extends AppCompatActivity implements View.OnClickListener {
 
     AutoCompleteTextView name;
@@ -73,8 +73,6 @@ public class AddBookActivity extends AppCompatActivity implements View.OnClickLi
 
 
         add.setText("Добавить");
-
-       // Log.d("DEBUG", Metadata.EditAuthor);
         add.setOnClickListener(this);
     }
 
@@ -101,6 +99,7 @@ public class AddBookActivity extends AppCompatActivity implements View.OnClickLi
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
+                
                 //получаем ответ от сервера
                 try {
                     res = (String) httpclient.execute(http, new BasicResponseHandler());
@@ -118,7 +117,7 @@ public class AddBookActivity extends AppCompatActivity implements View.OnClickLi
         }
 
         JSONObject json;
-        String resp = "Error:You Pidor!";
+        String resp = "";
 
         try{
             json = new JSONObject(res);
@@ -126,9 +125,11 @@ public class AddBookActivity extends AppCompatActivity implements View.OnClickLi
         } catch (JSONException e){}
 
         if(resp.equals("Error")) {
-            Snackbar.make(findViewById(R.id.add_button), "Ошибка! Вы не заполнили поля или использовали недопустимые символы!", Snackbar.LENGTH_LONG)
+            Snackbar.make(findViewById(R.id.add_button), "Ошибка! Вы не заполнили поля или использовали недопустимые символы!", 
+                          Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
         }
+        
         else if (resp.equals("Good")) {
             Intent intent = new Intent(AddBookActivity.this, BookListActivity.class);
             startActivity(intent);
@@ -138,16 +139,12 @@ public class AddBookActivity extends AppCompatActivity implements View.OnClickLi
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-
-
         menu.add("Выйти из аккаунта");
-
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-
 
         final String[] result = new String[1];
          if(item.getTitle().equals("Выйти из аккаунта")) {
