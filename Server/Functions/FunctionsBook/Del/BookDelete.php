@@ -1,3 +1,4 @@
+// Функция добавления новой книги
 <?php
     function BookDelete($LoginClient,$BookId,$BooksINI){
         
@@ -5,10 +6,10 @@
         
         if($LoginClient == $WhoAdded){
             $BooksINI->deleteSection($BookId);
-            $return = "Good|Deleted";
+            $result = "Good|Deleted";
             
-        } else $return = "Error|NotYouAddBook";
+        } else $result = "Error|NotYouAddedBook";
         
-    return $return;
+    return $result;
     }
 ?>
