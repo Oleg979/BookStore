@@ -1,3 +1,5 @@
+// Фукнция авторизации/регистрации
+
 <?php
     function Auth($LoginClient,$PasswordClient,$UsersINI){
         $LoginServer = $UsersINI->read()[$LoginClient];
