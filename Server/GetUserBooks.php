@@ -1,6 +1,8 @@
+// Функция получения всех книг определенного пользователя
+
 <?php
     function GetUserBooks($LoginClient, $BooksINI){
-     //$result = 'test';   
+    
         $books_array = $BooksINI->read();
         $i=0;
         foreach( $books_array as $key => $value){
@@ -11,9 +13,7 @@
                 $i++;
             }
         }
-        
-        
-        
+    
     return $result;    
    }
 ?>
