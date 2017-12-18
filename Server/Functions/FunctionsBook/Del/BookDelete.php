@@ -1,4 +1,5 @@
-// Функция добавления новой книги
+// Функция удаления книги
+
 <?php
     function BookDelete($LoginClient,$BookId,$BooksINI){
         
