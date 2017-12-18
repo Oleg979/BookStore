@@ -1,3 +1,5 @@
+//Вспомогательный класс для формирования списка книг
+
 package sstu_team.book.dummy;
 
 import org.apache.http.client.HttpClient;
@@ -18,22 +20,13 @@ import java.util.Map;
 
 import sstu_team.book.Metadata;
 
-/**
- * Helper class for providing sample content for user interfaces created by
- * Android template wizards.
- * <p>
- * TODO: Replace all uses of this class before publishing your app.
- */
+
 public class DummyContent {
 
-    /**
-     * An array of sample (dummy) items.
-     */
+    
     public List<DummyItem> ITEMS = new ArrayList<DummyItem>();
 
-    /**
-     * A map of sample (dummy) items, by ID.
-     */
+    
     public static final Map<String, DummyItem> ITEM_MAP = new HashMap<String, DummyItem>();
     public static String result;
 
@@ -61,14 +54,10 @@ public class DummyContent {
         StringBuilder builder = new StringBuilder();
         builder.append("Book id: ");
         builder.append("\n"+Metadata.currentId);
-        //builder.append("\n"+Metadata.names[Integer.valueOf(Metadata.currentNum)-1]);
-
         return builder.toString();
     }
 
-    /**
-     * A dummy item representing a piece of content.
-     */
+    
     public static class DummyItem {
         public final String id;
         public final String content;
