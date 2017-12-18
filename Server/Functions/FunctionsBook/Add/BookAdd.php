@@ -1,3 +1,5 @@
+// Функция добавления новой книги
+
 <?php
     function BookAdd($LoginClient,$BookName,$BookAuthor,$BookYear,$BooksINI){
             $Max = $BooksINI->read()['Count']['Max'];
