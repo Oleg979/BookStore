@@ -20,21 +20,18 @@ import java.util.Map;
 
 import sstu_team.book.Metadata;
 
-
 public class DummyContent {
 
-    
+
     public List<DummyItem> ITEMS = new ArrayList<DummyItem>();
 
-    
+
     public static final Map<String, DummyItem> ITEM_MAP = new HashMap<String, DummyItem>();
     public static String result;
 
     public static int COUNT = Metadata.count;
 
     public DummyContent() {
-
-
 
         for (int i = 1; i <= Metadata.count; i++) {
             addItem(createDummyItem(i));
@@ -54,10 +51,11 @@ public class DummyContent {
         StringBuilder builder = new StringBuilder();
         builder.append("Book id: ");
         builder.append("\n"+Metadata.currentId);
+        //builder.append("\n"+Metadata.names[Integer.valueOf(Metadata.currentNum)-1]);
+
         return builder.toString();
     }
 
-    
     public static class DummyItem {
         public final String id;
         public final String content;
