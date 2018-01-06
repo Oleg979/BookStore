@@ -4,8 +4,10 @@ package sstu_team.book;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -31,6 +33,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import sstu_team.book.dummy.DummyContent;
 
 import java.io.IOException;
@@ -41,53 +48,251 @@ import java.util.List;
 
 public class BookListActivity extends AppCompatActivity {
 
-
     private boolean mTwoPane;
     public static String result;
     DummyContent dum;
+    FloatingActionButton fab;
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_book_list);
 
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+
+        setSupportActionBar(toolbar);
+        toolbar.setTitle(getTitle());
+
+        if (findViewById(R.id.book_detail_container) != null)
+            mTwoPane = true;
 
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                HttpClient httpclient = new DefaultHttpClient();
-                HttpPost http = new HttpPost("http://gt99.xyz/Book/Main.php");
-                List nameValuePairs = new ArrayList(2);
-                nameValuePairs.add(new BasicNameValuePair("Function", "GetAllBooks"));
-                nameValuePairs.add(new BasicNameValuePair("Login", Metadata.login));
-                nameValuePairs.add(new BasicNameValuePair("Password", Metadata.password));
+        String func = "";
+        if (Metadata.type == 1) func = "GetUserBooks";
+        else if (Metadata.type == 0) func = "GetAllBooks";
 
-                try {
-                    http.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                //получаем ответ от сервера
-                try {
-                    result = (String) httpclient.execute(http, new BasicResponseHandler());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+        PostRequest example = new PostRequest();
+        RequestBody requestBody = formRequestBody(func,Metadata.login,Metadata.password);
+        Callback callback = formCallback();
 
         try {
-            Thread.sleep(200);
-        } catch (InterruptedException e) {
+            example.post(Metadata.url, requestBody, callback);
+        } catch (IOException e) {
             e.printStackTrace();
         }
+
+    }
+
+    private RequestBody formRequestBody(String func,String log, String pass) {
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("Function", func)
+                .addFormDataPart("Login", log)
+                .addFormDataPart("Password", pass)
+                .build();
+        return requestBody;
+    }
+
+    private Callback formCallback() {
+        return new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    String responseStr = response.body().string();
+                    Log.w("RESPONSE", responseStr);
+                    checkResponse(responseStr);
+                } else {
+                    Log.w("RESPONSE", "No response");
+                }
+
+            }
+        };
+    }
+
+    private void checkResponse(String response) {
+
+        JSONObject json;
+        int len = 0;
+
+        try {
+            json = new JSONObject(response);
+            len = json.getJSONArray("Books").length();
+            JSONArray arr = json.getJSONArray("Books");
+
+            String name[] = new String[arr.length()];
+            String ids[] = new String[arr.length()];
+            String editors[] = new String[arr.length()];
+            String times[] = new String[arr.length()];
+
+            for (int i = 0; i < arr.length(); i++) {
+                name[i] = arr.getJSONObject(i).getString("Name");
+                ids[i] = arr.getJSONObject(i).getString("Id");
+                editors[i] = arr.getJSONObject(i).getString("WhoAdded");
+                times[i] = arr.getJSONObject(i).getString("Time");
+            }
+
+            Metadata.names = name;
+            Metadata.ids = ids;
+            Metadata.editors = editors;
+            Metadata.times = times;
+        }
+        catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        Metadata.count = len;
+        dum = new DummyContent();
+
+        final int finalLen = len;
+        runOnUiThread(new Runnable(){
+            public void run(){
+                if (finalLen == 0) {
+                    Snackbar.make(findViewById(R.id.fab), "Ваша библиотека пуста. Добавьте новую книгу!", Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                }
+                Log.w("DEBUG",String.valueOf(finalLen));
+
+                dum = new DummyContent();
+                View recyclerView = findViewById(R.id.book_list);
+                assert recyclerView != null;
+                setupRecyclerView((RecyclerView) recyclerView);
+
+            }
+        });
+
+    }
+
+    public void onFabClick(View view) {
+
+        Intent intent = new Intent(BookListActivity.this,AddBookActivity.class);
+        startActivity(intent);
+
+    }
+
+    private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
+
+        recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(this, dum.ITEMS, mTwoPane));
+
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        if(item.getTitle().equals("Только мои книги")) {
+
+            String func = "";
+
+                    if (Metadata.type == 0) {
+                        Metadata.type = 1;
+                        func = "GetUserBooks";
+                        Snackbar.make(findViewById(R.id.fab), "Теперь отображаются только Ваши книги.",
+                                Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+
+                    }
+                    else if (Metadata.type == 1) {
+                        Metadata.type = 0;
+                        func = "GetAllBooks";
+                        Snackbar.make(findViewById(R.id.fab), "Теперь отображаются все книги.",
+                                Snackbar.LENGTH_SHORT)
+                                .setAction("Action", null).show();
+                    }
+
+                   PostRequest example = new PostRequest();
+                   RequestBody requestBody = formChangeRequestBody(func,Metadata.login,Metadata.password);
+                   Callback callback = formChangeCallback();
+
+                    try {
+                        example.post(Metadata.url, requestBody, callback);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+        }
+
+        else if(item.getTitle().equals("Поиск")) {
+            Snackbar.make(findViewById(R.id.fab), "Данная функция доступна только в платной версии приложения.", Snackbar.LENGTH_SHORT)
+                    .setAction("Action", null).show();
+        }
+
+        else if(item.getTitle().equals("Выйти")) {
+            DeAuthRequest deAuthRequest = new DeAuthRequest(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    if (response.isSuccessful()) {
+                        String responseStr = response.body().string();
+                        Log.w("RESPONSE", responseStr);
+                        Intent intent = new Intent(BookListActivity.this,Auth.class);
+                        startActivity(intent);
+                    } else {
+                        Log.w("RESPONSE", "No response");
+                    }
+                }
+            });
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private RequestBody formChangeRequestBody(String func,String log, String pass) {
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("Function", func)
+                .addFormDataPart("Login", log)
+                .addFormDataPart("Password", pass)
+                .build();
+        return requestBody;
+    }
+
+    private  Callback formChangeCallback() {
+        return new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    String responseStr = response.body().string();
+                    Log.w("RESPONSE", responseStr);
+                    checkChangeResponse(responseStr);
+                } else {
+                    Log.w("RESPONSE", "No response");
+                }
+
+            }
+        };
+    }
+
+    private void checkChangeResponse(String response) {
+
 
         JSONObject json;
         int len = 0;
 
         try{
-            json = new JSONObject(result);
+            json = new JSONObject(response);
             len = json.getJSONArray("Books").length();
 
             JSONArray arr = json.getJSONArray("Books");
@@ -95,54 +300,34 @@ public class BookListActivity extends AppCompatActivity {
             String name[] = new String[arr.length()];
             String ids[] = new String[arr.length()];
             String editors[] = new String[arr.length()];
+            String times[] = new String[arr.length()];
 
             for(int i = 0; i < arr.length(); i++) {
                 name[i] = arr.getJSONObject(i).getString("Name");
                 ids[i] = arr.getJSONObject(i).getString("Id");
                 editors[i] = arr.getJSONObject(i).getString("WhoAdded");
+                times[i] = arr.getJSONObject(i).getString("Time");
             }
 
             Metadata.names = name;
             Metadata.ids = ids;
             Metadata.editors = editors;
+            Metadata.times = times;
 
         } catch (JSONException e){}
 
         Metadata.count = len;
+
         dum = new DummyContent();
 
-        if (len == 0) {
-            Snackbar.make(findViewById(R.id.fab), "Ваша библиотека пуста. Добавьте новую книгу!", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-        }
-        Log.d("DEBUG",String.valueOf(len));
-
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        toolbar.setTitle(getTitle());
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                Intent intent = new Intent(BookListActivity.this,AddBookActivity.class);
-                startActivity(intent);
+        final View recyclerView = findViewById(R.id.book_list);
+        assert recyclerView != null;
+        runOnUiThread(new Runnable(){
+            public void run(){
+                setupRecyclerView((RecyclerView) recyclerView);
             }
         });
 
-        if (findViewById(R.id.book_detail_container) != null) {
-            mTwoPane = true;
-        }
-
-        View recyclerView = findViewById(R.id.book_list);
-        assert recyclerView != null;
-        setupRecyclerView((RecyclerView) recyclerView);
-    }
-
-    private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
-
-        recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(this, dum.ITEMS, mTwoPane));
     }
 
     public static class SimpleItemRecyclerViewAdapter
@@ -155,9 +340,6 @@ public class BookListActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-
-
-
                 DummyContent.DummyItem item = (DummyContent.DummyItem) view.getTag();
 
 
@@ -165,6 +347,7 @@ public class BookListActivity extends AppCompatActivity {
                 Log.d("CURRENT NUMBER", Metadata.ids[Integer.valueOf(item.id) - 1]);
                 Metadata.currentId = Metadata.ids[Integer.valueOf(item.id) - 1];
                 Metadata.currentEditor = Metadata.editors[Integer.valueOf(item.id) - 1];
+                Metadata.currentTime = Metadata.times[Integer.valueOf(item.id) - 1];
 
                 if (mTwoPane) {
                     Bundle arguments = new Bundle();
@@ -217,7 +400,7 @@ public class BookListActivity extends AppCompatActivity {
 
         class ViewHolder extends RecyclerView.ViewHolder {
             final TextView mIdView;
-           final TextView mContentView;
+            final TextView mContentView;
 
             ViewHolder(View view) {
                 super(view);
@@ -227,56 +410,12 @@ public class BookListActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
 
-        menu.add("Только мои книги");
-        menu.add("Выйти из аккаунта");
-
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        if(item.getTitle().equals("Только мои книги")) {
-
-        }
-
-        else if(item.getTitle().equals("Выйти из аккаунта")) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    HttpClient httpclient = new DefaultHttpClient();
-                    HttpPost http = new HttpPost("http://gt99.xyz/Book/Main.php");
-                    List nameValuePairs = new ArrayList(2);
-                    nameValuePairs.add(new BasicNameValuePair("Function", "DeAuth"));
-                    nameValuePairs.add(new BasicNameValuePair("Login", Metadata.login));
-                    nameValuePairs.add(new BasicNameValuePair("Password", Metadata.password));
-
-                    try {
-                        http.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
-                    //получаем ответ от сервера
-                    try {
-                        result = (String) httpclient.execute(http, new BasicResponseHandler());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }).start();
-
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            Intent intent = new Intent(BookListActivity.this,Auth.class);
-            startActivity(intent);
-        }
-            return super.onOptionsItemSelected(item);
-    }
 }
+
+
+
+
+
+
+
