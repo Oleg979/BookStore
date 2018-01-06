@@ -8,7 +8,10 @@ import android.annotation.TargetApi;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.NavUtils;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.app.LoaderManager.LoaderCallbacks;
 
@@ -50,10 +53,15 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 import static android.Manifest.permission.READ_CONTACTS;
 
-
-public class AddBookActivity extends AppCompatActivity implements View.OnClickListener {
+public class AddBookActivity extends AppCompatActivity {
 
     AutoCompleteTextView name;
     AutoCompleteTextView author;
@@ -63,6 +71,7 @@ public class AddBookActivity extends AppCompatActivity implements View.OnClickLi
     public static String res;
 
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_book);
 
@@ -71,117 +80,136 @@ public class AddBookActivity extends AppCompatActivity implements View.OnClickLi
         year = (AutoCompleteTextView) findViewById(R.id.BookYear);
         add = (Button) findViewById(R.id.add_button);
 
-
         add.setText("Добавить");
-        add.setOnClickListener(this);
+
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+
     }
 
-    @Override
-    public void onClick(View view) {
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String bookName = name.getText().toString();
-                String bookAuthor = author.getText().toString();
-                String bookYear = year.getText().toString();
-                HttpClient httpclient = new DefaultHttpClient();
-                HttpPost http = new HttpPost("http://gt99.xyz/Book/Main.php");
-                List nameValuePairs = new ArrayList(2);
-                nameValuePairs.add(new BasicNameValuePair("Function", "BookAdd"));
-                nameValuePairs.add(new BasicNameValuePair("Login", Metadata.login));
-                nameValuePairs.add(new BasicNameValuePair("Password", Metadata.password));
-                nameValuePairs.add(new BasicNameValuePair("BookName", bookName));
-                nameValuePairs.add(new BasicNameValuePair("BookAuthor", bookAuthor));
-                nameValuePairs.add(new BasicNameValuePair("BookYear", bookYear));
-                try {
-                    http.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                
-                //получаем ответ от сервера
-                try {
-                    res = (String) httpclient.execute(http, new BasicResponseHandler());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    public void onAddBtnClick(View view) {
 
+        String bookName = name.getText().toString();
+        String bookAuthor = author.getText().toString();
+        String bookYear = year.getText().toString();
+
+        PostRequest example = new PostRequest();
+        RequestBody requestBody = formRequestBody(Metadata.login,Metadata.password,
+                bookName,bookAuthor,bookYear);
+        Callback callback = formCallback();
 
         try {
-            Thread.sleep(200);
-        } catch (InterruptedException e) {
+            example.post(Metadata.url, requestBody, callback);
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
-        JSONObject json;
-        String resp = "";
-
-        try{
-            json = new JSONObject(res);
-            resp = json.getString("Result");
-        } catch (JSONException e){}
-
-        if(resp.equals("Error")) {
-            Snackbar.make(findViewById(R.id.add_button), "Ошибка! Вы не заполнили поля или использовали недопустимые символы!", 
-                          Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-        }
-        
-        else if (resp.equals("Good")) {
-            Intent intent = new Intent(AddBookActivity.this, BookListActivity.class);
-            startActivity(intent);
-        }
-
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add("Выйти из аккаунта");
-        return super.onCreateOptionsMenu(menu);
+
+    private RequestBody formRequestBody(String log,String pass,
+                                        String name,String author,String year) {
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("Function", "BookAdd")
+                .addFormDataPart("Login", log)
+                .addFormDataPart("Password", pass)
+                .addFormDataPart("BookName", name)
+                .addFormDataPart("BookAuthor",author)
+                .addFormDataPart("BookYear",year)
+                .build();
+        return requestBody;
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        final String[] result = new String[1];
-         if(item.getTitle().equals("Выйти из аккаунта")) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    HttpClient httpclient = new DefaultHttpClient();
-                    HttpPost http = new HttpPost("http://gt99.xyz/Book/Main.php");
-                    List nameValuePairs = new ArrayList(2);
-                    nameValuePairs.add(new BasicNameValuePair("Function", "DeAuth"));
-                    nameValuePairs.add(new BasicNameValuePair("Login", Metadata.login));
-                    nameValuePairs.add(new BasicNameValuePair("Password", Metadata.password));
-
-                    try {
-                        http.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
-                    //получаем ответ от сервера
-                    try {
-
-                        result[0] = (String) httpclient.execute(http, new BasicResponseHandler());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }).start();
-
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
+    private Callback formCallback() {
+        return new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
                 e.printStackTrace();
             }
 
-            Intent intent = new Intent(AddBookActivity.this,Auth.class);
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    String responseStr = response.body().string();
+                    Log.w("RESPONSE", responseStr);
+                    checkResponse(responseStr);
+                } else {
+                    Log.w("RESPONSE", "No response");
+                }
+            }
+        };
+    }
+
+    private void checkResponse(String response) {
+
+        JSONObject json;
+
+        try{
+            json = new JSONObject(response);
+            response = json.getString("Result");
+            Log.w("RESULT",response);
+        } catch (JSONException e){}
+
+        if(response.equals("Error")) {
+            Snackbar.make(findViewById(R.id.add_button),
+                    "Ошибка! Вы не заполнили поля или использовали недопустимые символы!", Snackbar.LENGTH_SHORT)
+                    .setAction("Action", null).show();
+        }
+
+        else if (response.equals("Good")) {
+            Intent intent = new Intent(AddBookActivity.this, BookListActivity.class);
             startActivity(intent);
+        }
+    }
+
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        getMenuInflater().inflate(R.menu.menu_other, menu);
+        return super.onCreateOptionsMenu(menu);
+
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        int id = item.getItemId();
+        if (id == android.R.id.home) {
+            NavUtils.navigateUpTo(this, new Intent(this, BookListActivity.class));
+            return true;
+        }
+
+        else if(item.getTitle().equals("Выйти")) {
+            DeAuthRequest deAuthRequest = new DeAuthRequest(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    if (response.isSuccessful()) {
+                        String responseStr = response.body().string();
+                        Log.w("RESPONSE", responseStr);
+                        Intent intent = new Intent(AddBookActivity.this,Auth.class);
+                        startActivity(intent);
+                    } else {
+                        Log.w("RESPONSE", "No response");
+                    }
+                }
+            });
         }
         return super.onOptionsItemSelected(item);
     }
 }
+
+
+
